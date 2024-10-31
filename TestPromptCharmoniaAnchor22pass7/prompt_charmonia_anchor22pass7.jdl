@@ -1,8 +1,8 @@
-Executable = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchor22pass7/prompt_charmonia_anchor22pass7.sh";
+Executable = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchor22pass7_withMID/prompt_charmonia_anchor22pass7.sh";
 Arguments = " --local  --ttl 82000 --label label --prodsplit 1  ";
-InputFile = "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchor22pass7/alien_jobscript.sh";
+InputFile = "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchor22pass7_withMID/alien_jobscript.sh";
 Split = "production:1-1";
-OutputDir = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchor22pass7/#alien_counter_03i#";
+OutputDir = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchor22pass7_withMID/#alien_counter_03i#";
 Requirements = member(other.GridPartitions,"multicore_8");
 CPUCores = "8";
 MemorySize = "60GB";

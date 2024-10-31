@@ -1,0 +1,76 @@
+Executable = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/prompt_charmonia_anchor22pass7.sh";
+
+JobTag = 
+{
+  "comment:pp, 13.6 TeV - Simulation of forward dimuons anchored to apass7 of pp data in 2022"
+};
+
+Packages = 
+{
+  "VO_ALICE@O2PDPSuite::async-async-v1-01-02a-slc9-alidist-async-v1-01-02-1"
+};
+ 
+InputFile = {
+  "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/anchorMC.sh",
+  "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/o2dpg-workflow-tools.py",
+  "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/o2dpg_workflow_utils.py",
+  "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/o2dpg_sim_workflow.py",
+  "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/o2dpg_sim_workflow_anchored.py",
+  "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/o2dpg_sim_config.py",
+  "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/o2dpg_qc_finalization_workflow.py",
+  "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/split_events.cpp",
+  "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/mch-qc.json",
+};
+
+# $1              -- [prod_type]
+# $2              -- [run number]
+# $3              -- [mc run]
+# $4              -- [n jobs]
+# #alien_counter# -- [split id]
+# $5              -- [split offset]
+# $6              -- [cycle]
+#SplitArguments = "$1 $2 $3 $4 #alien_counter# $5 $6";
+
+SplitArguments = "./anchorMC.sh 1 MC MC 526641 #alien_counter# 0 0 --nevents 1000";
+OutputDir = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/#alien_counter_03i#";
+
+Split = "production:1-1";
+ 
+ValidationCommand = "/alice/cern.ch/user/a/aliprod/LHC24g7/validation.sh";
+
+Output = 
+{
+  "AO2D*.root@disk=1",
+  "log_archive.zip:stderr,stdout,*.log,*.json,@disk=1"
+};
+
+OutputErrorE = 
+{
+  "log_archive.zip:stderr,stdout,*.log,tf*/*.log,tf*/sgnsim*.log,tf*/sgn_*_serverlog,tf*/sgn_*_workerlog0,*.json,@disk=1"
+};
+
+# Requirements = member(other.GridPartitions,"multicore_8");
+
+TTL = "72000";
+TTLOptimizationType="TTLStatistics";
+
+Price = "10";
+
+CPULimit="8";
+CPUCores = "8";
+
+LPMAnchorPassName = "apass7";
+LPMPASSNAME="apass7";
+MCAnchor = "apass7";
+CollisionSystem = "pp";
+
+JDLVariables = 
+{
+  "Packages",
+  "OutputDir",
+  "LPMAnchorPassName",
+  "MCAnchor",
+  "CollisionSystem",
+  "CPULimit",
+  "LPMPASSNAME"
+};
