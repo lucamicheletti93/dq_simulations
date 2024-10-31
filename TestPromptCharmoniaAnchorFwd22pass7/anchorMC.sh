@@ -3,73 +3,152 @@
 # add distortion maps
 # https://alice.its.cern.ch/jira/browse/O2-3346?focusedCommentId=300982&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-300982
 #
-# export O2DPG_ENABLE_TPC_DISTORTIONS=OFF
+# export O2DPG_ENABLE_TPC_DISTORTIONS=ON
 # SCFile=$PWD/distortions_5kG_lowIR.root # file needs to be downloaded
 # export O2DPG_TPC_DIGIT_EXTRA=" --distortionType 2 --readSpaceCharge ${SCFile} "
 
 #
-# procedure setting up and executing an anchored MC 
+# procedure setting up and executing an anchored MC
 #
 
-WD=$PWD
+########################
+# helper functionality #
+########################
+
+echo_info()
+{
+  echo "INFO [anchorMC]: ${*}"
+}
+
+echo_error()
+{
+  echo "ERROR [anchorMC]: ${*}"
+}
+
+print_help()
+{
+  echo "Usage: ./anchorMC.sh"
+  echo
+  echo "This needs O2 and O2DPG loaded from alienv."
+  echo
+  echo "Make sure the following env variables are set:"
+  echo "ALIEN_JDL_LPMANCHORPASSNAME or ANCHORPASSNAME,"
+  echo "ALIEN_JDL_MCANCHOR or MCANCHOR,"
+  echo "ALIEN_JDL_LPMPASSNAME or PASSNAME,"
+  echo "ALIEN_JDL_LPMRUNNUMBER or RUNNUMBER,"
+  echo "ALIEN_JDL_LPMPRODUCTIONTYPE or PRODUCTIONTYPE,"
+  echo "ALIEN_JDL_LPMINTERACTIONTYPE or INTERACTIONTYPE,"
+  echo "ALIEN_JDL_LPMPRODUCTIONTAG or PRODUCTIONTAG,"
+  echo "ALIEN_JDL_LPMANCHORRUN or ANCHORRUN,"
+  echo "ALIEN_JDL_LPMANCHORPRODUCTION or ANCHORPRODUCTION,"
+  echo "ALIEN_JDL_LPMANCHORYEAR or ANCHORYEAR,"
+  echo
+  echo "as well as:"
+  echo "NTIMEFRAMES,"
+  echo "NSIGEVENTS,"
+  echo "SPLITID,"
+  echo "CYCLE,"
+  echo "PRODSPLIT."
+  echo
+  echo "Optional are:"
+  echo "ALIEN_JDL_CPULIMIT or CPULIMIT, set the CPU limit of the workflow runner, default: 8,"
+  echo "NWORKERS, set the number of workers during detector transport, default: 8,"
+  echo "ALIEN_JDL_SIMENGINE or SIMENGINE, choose the transport engine, default: TGeant4,"
+  echo "ALIEN_JDL_WORKFLOWDETECTORS, set detectors to be taken into account, default: ITS,TPC,TOF,FV0,FT0,FDD,MID,MFT,MCH,TRD,EMC,PHS,CPV,HMP,CTP,"
+  echo "ALIEN_JDL_ANCHOR_SIM_OPTIONS, additional options that are passed to the workflow creation, default: -gen pythia8,"
+  echo "ALIEN_JDL_ADDTIMESERIESINMC, run TPC time series. Default: 1, switch off by setting to 0,"
+  echo "DISABLE_QC, set this to disable QC, e.g. to 1"
+}
+
+# Prevent the script from being soured to omit unexpected surprises when exit is used
+SCRIPT_NAME="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
+if [ "${SCRIPT_NAME}" != "$(basename ${BASH_SOURCE[0]})" ] ; then
+    echo_error "This script cannot not be sourced" >&2
+    return 1
+fi
+
+while [ "$1" != "" ] ; do
+    case $1 in
+        --help|-h ) shift
+                    print_help
+                    exit 0
+                    ;;
+        * ) echo "Unknown argument ${1}"
+            exit 1
+            ;;
+    esac
+done
 
 # make sure O2DPG + O2 is loaded
-[ ! "${O2DPG_ROOT}" ] && echo "Error: This needs O2DPG loaded" && exit 1
-[ ! "${O2_ROOT}" ] && echo "Error: This needs O2 loaded" && exit 1
+[ ! "${O2DPG_ROOT}" ] && echo_error "This needs O2DPG loaded" && exit 1
+[ ! "${O2_ROOT}" ] && echo_error "This needs O2 loaded" && exit 1
 
-chmod +x *.py
-chmod +x *.sh
+# check if jq is there
+which jq >/dev/null 2>&1
+[ "${?}" != "0" ] && { echo_error "jq is not found. Install or load via alienv." ; exit 1 ; }
 
-# ------ CREATE AN MC CONFIG STARTING FROM RECO SCRIPT --------
-# - this part should not be done on the GRID, where we should rather
-#   point to an existing config (O2DPG repo or local disc or whatever)
-export ALIEN_JDL_LPMANCHORYEAR=${ALIEN_JDL_LPMANCHORYEAR:-2023}
+alien-token-info >/dev/null 2>&1
+[ "${?}" != "0" ] && { echo_error "No GRID token found, required to run." ; exit 1 ; }
 
-# PROD="jpsi_coh"
-# RUNNUMBER_IN=544991
-# RUNNUMBER_MC=544991
-# PRODSPLIT=10
-# SPLITID=2
-# SPLITOFFSET=0
-# CYCLE=0
+#################################################################
+# Set all required variables to identify an anchored production #
+#################################################################
 
-PROD=$1
-RUNNUMBER_IN=$2
-RUNNUMBER_MC=$3
-PRODSPLIT=$4
-SPLITID=$5
-SPLITOFFSET=$6
-CYCLE=$7
-
-SPLITOFFSET=${SPLITOFFSET:-0}
-RUNNUMBER=${RUNNUMBER_IN:-544451}
-RUNNUMBER_MC=${RUNNUMBER_MC:-544451}
+# Allow for both "ALIEN_JDL_LPM<KEY>" as well as "KEY"
 
 # the only four where there is a real default for
-export CPULIMIT=8
-export NWORKERS=8
-
 export ALIEN_JDL_CPULIMIT=${ALIEN_JDL_CPULIMIT:-${CPULIMIT:-8}}
 export ALIEN_JDL_SIMENGINE=${ALIEN_JDL_SIMENGINE:-${SIMENGINE:-TGeant4}}
 export ALIEN_JDL_WORKFLOWDETECTORS=${ALIEN_JDL_WORKFLOWDETECTORS:-ITS,TPC,TOF,FV0,FT0,FDD,MID,MFT,MCH,TRD,EMC,PHS,CPV,HMP,CTP}
-export ALIEN_JDL_ANCHOR_SIM_OPTIONS=${ALIEN_JDL_ANCHOR_SIM_OPTIONS:--gen hepmc}
+# can be passed to contain additional options that will be passed to o2dpg_sim_workflow_anchored.py and eventually to o2dpg_sim_workflow.py
+export ALIEN_JDL_ANCHOR_SIM_OPTIONS=${ALIEN_JDL_ANCHOR_SIM_OPTIONS:--gen pythia8}
 # all others MUST be set by the user/on the outside
+export ALIEN_JDL_LPMANCHORPASSNAME=${ALIEN_JDL_LPMANCHORPASSNAME:-${ANCHORPASSNAME}}
+# LPMPASSNAME is used in O2 and O2DPG scripts, however on the other hand, ALIEN_JDL_LPMANCHORPASSNAME is the one that is set in JDL templates; so use ALIEN_JDL_LPMANCHORPASSNAME and set ALIEN_JDL_LPMPASSNAME
+export ALIEN_JDL_LPMPASSNAME=${ALIEN_JDL_LPMANCHORPASSNAME}
+export ALIEN_JDL_LPMRUNNUMBER=${ALIEN_JDL_LPMRUNNUMBER:-${RUNNUMBER}}
+export ALIEN_JDL_LPMPRODUCTIONTYPE=${ALIEN_JDL_LPMPRODUCTIONTYPE:-${PRODUCTIONTYPE}}
+export ALIEN_JDL_LPMINTERACTIONTYPE=${ALIEN_JDL_LPMINTERACTIONTYPE:-${INTERACTIONTYPE}}
+export ALIEN_JDL_LPMPRODUCTIONTAG=${ALIEN_JDL_LPMPRODUCTIONTAG:-${PRODUCTIONTAG}}
+export ALIEN_JDL_LPMANCHORRUN=${ALIEN_JDL_LPMANCHORRUN:-${ANCHORRUN}}
+export ALIEN_JDL_LPMANCHORPRODUCTION=${ALIEN_JDL_LPMANCHORPRODUCTION:-${ANCHORPRODUCTION}}
+export ALIEN_JDL_LPMANCHORYEAR=${ALIEN_JDL_LPMANCHORYEAR:-${ANCHORYEAR}}
+# decide whether to run TPC time series; on by default, switched off by setting to 0
+export ALIEN_JDL_ADDTIMESERIESINMC=${ALIEN_JDL_ADDTIMESERIESINMC:-1}
 
-export ALIEN_JDL_LPMRUNNUMBER=${RUNNUMBER_IN:-526641}
-export ALIEN_JDL_LPMANCHORRUN=${RUNNUMBER_IN:-526641}
-export ALIEN_JDL_LPMINTERACTIONTYPE=pp
-export ALIEN_JDL_LPMPRODUCTIONTAG="LHC22o"
-export ALIEN_JDL_LPMANCHORPRODUCTION="LHC22o"
-export ALIEN_JDL_MCANCHOR="apass7"
-export ALIEN_JDL_LPMPASSNAME="apass7"
-export ALIEN_JDL_LPMANCHORPASSNAME="apass7"
-export ALIEN_JDL_LPMPRODUCTIONTYPE="MC"
-export ALIEN_JDL_LPMANCHORYEAR=2022
+# cache the production tag, will be set to a special anchor tag; reset later in fact
+ALIEN_JDL_LPMPRODUCTIONTAG_KEEP=$ALIEN_JDL_LPMPRODUCTIONTAG
+echo_info "Substituting ALIEN_JDL_LPMPRODUCTIONTAG=$ALIEN_JDL_LPMPRODUCTIONTAG with ALIEN_JDL_LPMANCHORPRODUCTION=$ALIEN_JDL_LPMANCHORPRODUCTION for simulating reco pass..."
+ALIEN_JDL_LPMPRODUCTIONTAG=$ALIEN_JDL_LPMANCHORPRODUCTION
 
-### async_pass.sh
+# check variables that need to be set
+[ -z "${ALIEN_JDL_LPMANCHORPASSNAME}" ] && { echo_error "Set ALIEN_JDL_LPMANCHORPASSNAME or ANCHORPASSNAME" ; exit 1 ; }
+[ -z "${ALIEN_JDL_LPMRUNNUMBER}" ] && { echo_error "Set ALIEN_JDL_LPMRUNNUMBER or RUNNUMBER" ; exit 1 ; }
+[ -z "${ALIEN_JDL_LPMPRODUCTIONTYPE}" ] && { echo_error "Set ALIEN_JDL_LPMPRODUCTIONTYPE or PRODUCTIONTYPE" ; exit 1 ; }
+[ -z "${ALIEN_JDL_LPMINTERACTIONTYPE}" ] && { echo_error "Set ALIEN_JDL_LPMINTERACTIONTYPE or INTERACTIONTYPE" ; exit 1 ; }
+[ -z "${ALIEN_JDL_LPMPRODUCTIONTAG}" ] && { echo_error "Set ALIEN_JDL_LPMPRODUCTIONTAG or PRODUCTIONTAG" ; exit 1 ; }
+[ -z "${ALIEN_JDL_LPMANCHORRUN}" ] && { echo_error "Set ALIEN_JDL_LPMANCHORRUN or ANCHORRUN" ; exit 1 ; }
+[ -z "${ALIEN_JDL_LPMANCHORPRODUCTION}" ] && { echo_error "Set ALIEN_JDL_LPMANCHORPRODUCTION or ANCHORPRODUCTION" ; exit 1 ; }
+[ -z "${ALIEN_JDL_LPMANCHORYEAR}" ] && { echo_error "Set ALIEN_JDL_LPMANCHORYEAR or ANCHORYEAR" ; exit 1 ; }
+
+[ -z "${NTIMEFRAMES}" ] && { echo_error "Set NTIMEFRAMES" ; exit 1 ; }
+[ -z "${NSIGEVENTS}" ] && { echo_error "Set NSIGEVENTS" ; exit 1 ; }
+[ -z "${SPLITID}" ] && { echo_error "Set SPLITID" ; exit 1 ; }
+[ -z "${CYCLE}" ] && { echo_error "Set CYCLE" ; exit 1 ; }
+[ -z "${PRODSPLIT}" ] && { echo_error "Set PRODSPLIT" ; exit 1 ; }
+
+# also for this keep a real default
+NWORKERS=${NWORKERS:-8}
+# set a default seed if not given
+SEED=${ALIEN_PROC_ID:-${SEED:-1}}
+
+
+# default async_pass.sh script
 DPGRECO=$O2DPG_ROOT/DATA/production/configurations/asyncReco/async_pass.sh
+# default destenv_extra.sh script
 DPGSETENV=$O2DPG_ROOT/DATA/production/configurations/asyncReco/setenv_extra.sh
 
+# a specific async_pass.sh script is in the current directory, assume that one should be used
 if [[ -f async_pass.sh ]]; then
     # the default is executable, however, this may not be, so make it so
     chmod +x async_pass.sh
@@ -78,19 +157,21 @@ else
     cp -v $DPGRECO .
 fi
 
+# if there is no setenv_extra.sh in this directory (so no special version is "shipped" with this rpodcution), copy the default one
 if [[ ! -f setenv_extra.sh ]] ; then
     cp ${DPGSETENV} .
-    echo "[INFO alien_setenv_extra.sh] Use default setenv_extra.sh from ${DPGSETENV}."
+    echo_info "Use default setenv_extra.sh from ${DPGSETENV}."
 else
-    echo "[INFO alien_setenv_extra.sh] setenv_extra.sh was found in the current working directory, use it."
+    echo_info "setenv_extra.sh was found in the current working directory, use it."
 fi
 
-#settings that are MC-specific
+chmod u+x setenv_extra.sh
+
+echo_info "Setting up DPGRECO to ${DPGRECO}"
+
+# settings that are MC-specific, modify setenv_extra.sh in-place
 sed -i 's/GPU_global.dEdxUseFullGainMap=1;GPU_global.dEdxDisableResidualGainMap=1/GPU_global.dEdxSplineTopologyCorrFile=splines_for_dedx_V1_MC_iter0_PP.root;GPU_global.dEdxDisableTopologyPol=1;GPU_global.dEdxDisableGainMap=1;GPU_global.dEdxDisableResidualGainMap=1;GPU_global.dEdxDisableResidualGain=1/' setenv_extra.sh
 ### ???
-
-chmod u+x async_pass.sh
-chmod u+x setenv_extra.sh
 
 # take out line running the workflow (if we don't have data input)
 [ ${CTF_TEST_FILE} ] || sed -i '/WORKFLOWMODE=run/d' async_pass.sh
@@ -99,219 +180,112 @@ chmod u+x setenv_extra.sh
 export IGNORE_EXISTING_SHMFILES=1
 touch list.list
 
+# run the async_pass.sh and store output to log file for later inspection and extraction of information
 ./async_pass.sh ${CTF_TEST_FILE:-""} 2&> async_pass_log.log
 RECO_RC=$?
 
-echo "RECO finished with ${RECO_RC}"
-if [ "${NO_MC}" ]; then
-  return ${RECO_RC} 2>/dev/null || exit ${RECO_RC} # optionally quit here and don't do MC (useful for testing)
+echo_info "async_pass.sh finished with ${RECO_RC}"
+
+if [[ "${RECO_RC}" != "0" ]] ; then
+    exit ${RECO_RC}
 fi
 
 ALIEN_JDL_LPMPRODUCTIONTAG=$ALIEN_JDL_LPMPRODUCTIONTAG_KEEP
-echo "Setting back ALIEN_JDL_LPMPRODUCTIONTAG to $ALIEN_JDL_LPMPRODUCTIONTAG"
+echo_info "Setting back ALIEN_JDL_LPMPRODUCTIONTAG to $ALIEN_JDL_LPMPRODUCTIONTAG"
 
 # now create the local MC config file --> config-config.json
 ${O2DPG_ROOT}/UTILS/parse-async-WorkflowConfig.py
+ASYNC_WF_RC=${?}
 
 # check if config reasonably created
-if [[ `grep "o2-ctf-reader-workflow-options" config-json.json 2> /dev/null | wc -l` == "0" ]]; then
-  echo "Problem in anchor config creation. Stopping."
+if [[ "${ASYNC_WF_RC}" != "0" || `grep "o2-ctf-reader-workflow-options" config-json.json 2> /dev/null | wc -l` == "0" ]]; then
+  echo_error "Problem in anchor config creation. Exiting."
   exit 1
 fi
 
 # -- CREATE THE MC JOB DESCRIPTION ANCHORED TO RUN --
-NWORKERS=${NWORKERS:-8}
+
 MODULES="--skipModules ZDC"
-SIMENGINE=${SIMENGINE:-TGeant4}
-SIMENGINE=${ALIEN_JDL_SIMENGINE:-${SIMENGINE}}
-NTIMEFRAMES=${NTIMEFRAMES:-10}
+# Since this is used, set it explicitly
+ALICEO2_CCDB_LOCALCACHE=${ALICEO2_CCDB_LOCALCACHE:-$(pwd)/ccdb}
 
-# SEED=1
-SPLITID=${SPLITID:-2}
-SPLITID=$((SPLITID+1))
-SPLITID=$((SPLITID+SPLITOFFSET))
-PRODSPLIT=${PRODSPLIT:-1}
-PRODSPLIT=$((PRODSPLIT+2))
-CYCLE=${CYCLE:-0}
-let SEED=$SPLITID+$CYCLE*$PRODSPLIT
+# these arguments will be digested by o2dpg_sim_workflow_anchored.py
+baseargs="-tf ${NTIMEFRAMES} --split-id ${SPLITID} --prod-split ${PRODSPLIT} --cycle ${CYCLE} --run-number ${ALIEN_JDL_LPMRUNNUMBER}"
 
-NSIGPTF=${NSIGPTF:-100}
-NBKGPTF=${NBKGPTF:-5}
-
-# input mc events
-PROD=${PROD:-"jpsi_coh"}
-export HEPMC_LOCAL_FILE=${HEPMC_LOCAL_FILE:-"events.hepmc"}
-HEPMC_EVENTS_DIR="/alice/cern.ch/user/n/nburmaso/pbpb2024mc/prod/hepmc/apass4-jira/$PROD/$RUNNUMBER"
-
-echo "alien.py cp alien:$HEPMC_EVENTS_DIR/events.hepmc file:$HEPMC_LOCAL_FILE"
-alien.py cp alien:$HEPMC_EVENTS_DIR/events.hepmc file:$HEPMC_LOCAL_FILE
-SPLIT=$((SPLITID-1))
-root -l -b -q split_events.cpp\($NSIGPTF,$NTIMEFRAMES,$SPLIT\)
-
-# signal hepmc + pbpb
-# baseargs="-ns ${NSIGPTF} -nb ${NBKGPTF} -do-embedding True -tf ${NTIMEFRAMES} --split-id ${SPLITID} --prod-split ${PRODSPLIT} --cycle ${CYCLE} --run-number ${RUNNUMBER}"
-# remainingargs="-eCM 5360 \
-#                -col PbPb -gen "hepmc" -proc heavy_ion \
-#                -colBkg PbPb -genBkg "pythia8" -procBkg heavy_ion \
-#                --mft-reco-full \
-#                -seed ${SEED} \
-#                -confKey \"HepMC.fileName=${HEPMC_LOCAL_FILE};HepMC.version=3;\""
-
-# signal hepmc only
-baseargs="-ns ${NSIGPTF} -tf ${NTIMEFRAMES} --split-id ${SPLITID} --prod-split ${PRODSPLIT} --cycle ${CYCLE} --run-number ${RUNNUMBER}"
-remainingargs="-eCM 5360 \
-               -col PbPb -gen "hepmc" -proc heavy_ion \
-               --mft-reco-full \
-               -seed ${SEED} \
-               --event-gen-mode integrated \
-               --combine-tpc-clusterization \
-               -confKey \"HepMC.fileName=${HEPMC_LOCAL_FILE};HepMC.version=3;\""
-
-# align-geom.mDetectors=none
-
-# # box
-# baseargs="-ns ${NSIGPTF} -tf ${NTIMEFRAMES} --split-id ${SPLITID} --prod-split ${PRODSPLIT} --cycle ${CYCLE} --run-number ${RUNNUMBER}"
-# remainingargs="-eCM 5360 \
-#                -col PbPb -gen "extgen" -proc heavy_ion \
-#                --mft-reco-full \
-#                -seed ${SEED} \
-#                -confKey \"GeneratorExternal.fileName=$O2DPG_ROOT/MC/config/PWGDQ/external/generator/GeneratorBoxFwd.C;GeneratorExternal.funcName=fwdMuBoxGen(50,13,-4.00,-2.50,1.5,2.5)\""
-
-remainingargs="${remainingargs} -e ${SIMENGINE} -j ${NWORKERS}"
+# these arguments will be passed as well but only evetually be digested by o2dpg_sim_workflow.py which is called from o2dpg_sim_workflow_anchored.py
+remainingargs="-seed ${SEED} -ns ${NSIGEVENTS} --include-local-qc --pregenCollContext"
+remainingargs="${remainingargs} -e ${ALIEN_JDL_SIMENGINE} -j ${NWORKERS}"
 remainingargs="${remainingargs} -productionTag ${ALIEN_JDL_LPMPRODUCTIONTAG:-alibi_anchorTest_tmp}"
-remainingargs="${remainingargs} --anchor-config config-json.json"
-remainingargs="${remainingargs} --include-local-qc"
+# prepend(!) ALIEN_JDL_ANCHOR_SIM_OPTIONS
+# since the last passed argument wins, e.g. -productionTag cannot be overwritten by the user
+remainingargs="${ALIEN_JDL_ANCHOR_SIM_OPTIONS} ${remainingargs} --anchor-config config-json.json"
 
-echo "baseargs: ${baseargs}"
-echo "remainingargs: ${remainingargs}"
-
-export SIMDIR=$PWD
-export ALICEO2_CCDB_LOCALCACHE=$PWD/.ccdb
+echo_info "baseargs passed to o2dpg_sim_workflow_anchored.py: ${baseargs}"
+echo_info "remainingargs forwarded to o2dpg_sim_workflow.py: ${remainingargs}"
 
 # query CCDB has changed, w/o "_"
-chmod +x o2dpg_sim_workflow_anchored.py
-./o2dpg_sim_workflow_anchored.py ${baseargs} -- ${remainingargs} &> timestampsampling_${RUNNUMBER}.log
-[ "$?" != "0" ] && echo "Problem during anchor timestamp sampling " && exit 1
-
-TIMESTAMP=`grep "Determined timestamp to be" timestampsampling_${RUNNUMBER}.log | awk '//{print $6}'`
-echo "TIMESTAMP IS ${TIMESTAMP}"
-
-# -- PREFETCH CCDB OBJECTS TO DISC      --
-# (make sure the right objects at the right timestamp are fetched
-#  until https://alice.its.cern.ch/jira/browse/O2-2852 is fixed)
-export ALICEO2_CCDB_LOCALCACHE=$PWD/.ccdb
-[ ! -d .ccdb ] && mkdir .ccdb
+${O2DPG_ROOT}/MC/bin/o2dpg_sim_workflow_anchored.py ${baseargs} -- ${remainingargs} &> timestampsampling_${ALIEN_JDL_LPMRUNNUMBER}.log
+WF_RC="${?}"
+if [ "${WF_RC}" != "0" ] ; then
+    echo_error "Problem during anchor timestamp sampling and workflow creation. Exiting."
+    exit ${WF_RC}
+fi
 
 TIMESTAMP=`grep "Determined timestamp to be" timestampsampling_${ALIEN_JDL_LPMRUNNUMBER}.log | awk '//{print $6}'`
-echo "TIMESTAMP IS ${TIMESTAMP}"
-
-# standard ccdb objects
-declare -a CCDBOBJECTS=( "/CTP/Calib/OrbitReset" "/GLO/Config/GRPMagField/" "/GLO/Config/GRPLHCIF" "/ITS/Calib/DeadMap" "/ITS/Calib/NoiseMap" "/ITS/Calib/ClusterDictionary" "/TPC/Calib/PadGainFull" "/TPC/Calib/TopologyGain" "/TPC/Calib/TimeGain" "/TPC/Calib/PadGainResidual" "/TPC/Config/FEEPad" "/TOF/Calib/Diagnostic" "/TOF/Calib/LHCphase" "/TOF/Calib/FEELIGHT" "/TOF/Calib/ChannelCalib" "/MFT/Calib/DeadMap" "/MFT/Calib/NoiseMap" "/MFT/Calib/ClusterDictionary" "/FT0/Calib/ChannelTimeOffset" "/FV0/Calib/ChannelTimeOffset" )
-
-for obj in "${CCDBOBJECTS[@]}"; do
-  ${O2_ROOT}/bin/o2-ccdb-downloadccdbfile --host http://alice-ccdb.cern.ch/ -p ${obj} -d .ccdb --timestamp ${TIMESTAMP}
-  if [ ! "$?" == "0" ]; then
-    echo "Problem during CCDB prefetching of ${CCDBOBJECTS}. Exiting."
-    exit 1
-  fi
-done
+echo_info "TIMESTAMP IS ${TIMESTAMP}"
 
 # -- Create aligned geometry using ITS ideal alignment to avoid overlaps in geant
 CCDBOBJECTS_IDEAL_MC="ITS/Calib/Align"
 TIMESTAMP_IDEAL_MC=1
 ${O2_ROOT}/bin/o2-ccdb-downloadccdbfile --host http://alice-ccdb.cern.ch/ -p ${CCDBOBJECTS_IDEAL_MC} -d ${ALICEO2_CCDB_LOCALCACHE} --timestamp ${TIMESTAMP_IDEAL_MC}
-if [ ! "$?" == "0" ]; then
-  echo "Problem during CCDB prefetching of ${CCDBOBJECTS_IDEAL_MC}. Exiting."
-  exit 1
+CCDB_RC="${?}"
+if [ ! "${CCDB_RC}" == "0" ]; then
+  echo_error "Problem during CCDB prefetching of ${CCDBOBJECTS_IDEAL_MC}. Exiting."
+  exit ${CCDB_RC}
 fi
 
-echo "run with echo in pipe" | ${O2_ROOT}/bin/o2-create-aligned-geometry-workflow --configKeyValues "HBFUtils.startTime=${TIMESTAMP}" --condition-remap=file://${ALICEO2_CCDB_LOCALCACHE}=ITS/Calib/Align -b
+# TODO This can potentially be removed or if needed, should be taken over by o2dpg_sim_workflow_anchored.py and O2_dpg_workflow_runner.py
+echo "run with echo in pipe" | ${O2_ROOT}/bin/o2-create-aligned-geometry-workflow --configKeyValues "HBFUtils.startTime=${TIMESTAMP}" --condition-remap=file://${ALICEO2_CCDB_LOCALCACHE}=ITS/Calib/Align -b --run
 mkdir -p $ALICEO2_CCDB_LOCALCACHE/GLO/Config/GeometryAligned
 ln -s -f $PWD/o2sim_geometry-aligned.root $ALICEO2_CCDB_LOCALCACHE/GLO/Config/GeometryAligned/snapshot.root
-
-# ccdb objects for mch
-declare -a CCDBOBJECTS=( "/Users/n/nburmaso/test/MCH/Calib/RejectList" "/MCH/Calib/HV")
-
-for obj in "${CCDBOBJECTS[@]}"; do
-  ${O2_ROOT}/bin/o2-ccdb-downloadccdbfile --host http://alice-ccdb.cern.ch/ -p ${obj} -d .ccdb --timestamp ${TIMESTAMP}
-  if [ ! "$?" == "0" ]; then
-    echo "Problem during CCDB prefetching of ${CCDBOBJECTS}. Exiting."
-    exit 1
-  fi
-done
-
-# custom ccdb objects for mch
-mkdir -p $ALICEO2_CCDB_LOCALCACHE/MCH/Calib/RejectList/
-mkdir -p $ALICEO2_CCDB_LOCALCACHE/MCH/Calib/BadChannel/
-cp $ALICEO2_CCDB_LOCALCACHE/Users/n/nburmaso/test/MCH/Calib/RejectList/* $ALICEO2_CCDB_LOCALCACHE/MCH/Calib/RejectList/
-cp $ALICEO2_CCDB_LOCALCACHE/Users/n/nburmaso/test/MCH/Calib/RejectList/* $ALICEO2_CCDB_LOCALCACHE/MCH/Calib/BadChannel/
-
-
-# custom ccdb objects for mid
-mkdir -p $ALICEO2_CCDB_LOCALCACHE/MID/Calib/ChamberEfficiency/
-
-if [[ $RUNNUMBER < 544511 ]]; then
-  declare -a CCDBOBJECTS=( "Users/l/lquaglia/MID/Calib/ChamberEfficiency/LHC23_PbPb_pass3_fullTPC_perRun" )
-  for obj in "${CCDBOBJECTS[@]}"; do
-    ${O2_ROOT}/bin/o2-ccdb-downloadccdbfile --host http://alice-ccdb.cern.ch/ -p ${obj} -d .ccdb --timestamp ${TIMESTAMP}
-    if [ ! "$?" == "0" ]; then
-      echo "Problem during CCDB prefetching of ${CCDBOBJECTS}. Exiting."
-      exit 1
-    fi
-  done
-  cp $ALICEO2_CCDB_LOCALCACHE/Users/l/lquaglia/MID/Calib/ChamberEfficiency/LHC23_PbPb_pass3_fullTPC_perRun/* $ALICEO2_CCDB_LOCALCACHE/MID/Calib/ChamberEfficiency/
-else
-  declare -a CCDBOBJECTS=( "Users/l/lquaglia/MID/Calib/ChamberEfficiency/LHC23_PbPb_pass3_I-A11_perRun" )
-  for obj in "${CCDBOBJECTS[@]}"; do
-    ${O2_ROOT}/bin/o2-ccdb-downloadccdbfile --host http://alice-ccdb.cern.ch/ -p ${obj} -d .ccdb --timestamp ${TIMESTAMP}
-    if [ ! "$?" == "0" ]; then
-      echo "Problem during CCDB prefetching of ${CCDBOBJECTS}. Exiting."
-      exit 1
-    fi
-  done
-  cp $ALICEO2_CCDB_LOCALCACHE/Users/l/lquaglia/MID/Calib/ChamberEfficiency/LHC23_PbPb_pass3_I-A11_perRun/* $ALICEO2_CCDB_LOCALCACHE/MID/Calib/ChamberEfficiency/
-fi
-
+[[ -f $PWD/its_GeometryTGeo.root ]] && mkdir -p $ALICEO2_CCDB_LOCALCACHE/ITS/Config/Geometry && ln -s -f $PWD/its_GeometryTGeo.root $ALICEO2_CCDB_LOCALCACHE/ITS/Config/Geometry/snapshot.root
+[[ -f $PWD/mft_GeometryTGeo.root ]] && mkdir -p $ALICEO2_CCDB_LOCALCACHE/MFT/Config/Geometry && ln -s -f $PWD/mft_GeometryTGeo.root $ALICEO2_CCDB_LOCALCACHE/MFT/Config/Geometry/snapshot.root
 
 # -- RUN THE MC WORKLOAD TO PRODUCE AOD --
 
 export FAIRMQ_IPC_PREFIX=./
 
-echo "Ready to start main workflow"
+echo_info "Ready to start main workflow"
 
-# reduce memory/cpu usage
-sed -i "s|tpc-lanes ${NWORKERS}|tpc-lanes 2|g" workflow.json
-
-echo "********* RUNNING ARGUMENTS ***********"
-echo "MC RUN ${RUNNUMBER_MC}"
-echo "SEED   ${SEED}"
-echo "********* DONE ************************"
-
-${O2DPG_ROOT}/MC/bin/o2_dpg_workflow_runner.py \
-  -f workflow.json \
-  --stdout-on-failure --keep-going \
-  --optimistic-resources \
-  -tt ${ALIEN_JDL_O2DPGWORKFLOWTARGET:-aod} \
-  --cpu-limit ${ALIEN_JDL_CPULIMIT:-8}
-
-
-# ${O2DPG_ROOT}/MC/bin/o2_dpg_workflow_runner.py \
-#   -f workflow.json \
-#   --cpu-limit ${ALIEN_JDL_CPULIMIT:-8} \
-#   --keep-going \
-#   --target-labels QC
-
-if [ ! -f $WD/AO2D.root ]; then
-  echo "AO2D.root file not found! Trying to merge what we have..."
-  find $WD/tf* -name "AO2D.root" | sort -V > $WD/mergelist.txt
-  echo
-  if [ ! -s $WD/mergelist.txt ]; then
-    echo "No AO2Ds to be merged!"
-  else
-    echo "Found AO2Ds to be merged:"
-    echo "Found `cat $WD/mergelist.txt | wc -l` AO2Ds!"
-    cat $WD/mergelist.txt
-  fi
-  echo
-  o2-aod-merger --input $WD/mergelist.txt --output $WD/AO2D.root
+${O2DPG_ROOT}/MC/bin/o2_dpg_workflow_runner.py -f workflow.json -tt ${ALIEN_JDL_O2DPGWORKFLOWTARGET:-aod} --cpu-limit ${ALIEN_JDL_CPULIMIT:-8} --dynamic-resources
+MCRC=$?  # <--- we'll report back this code
+if [[ "${ALIEN_JDL_ADDTIMESERIESINMC}" != "0" ]]; then
+  # Default value is 1 so this is run by default.
+  echo_info "Running TPC time series"
+  ${O2DPG_ROOT}/MC/bin/o2_dpg_workflow_runner.py -f workflow.json -tt tpctimes
 fi
+
+[[ ! -z "${DISABLE_QC}" ]] && echo_info "QC is disabled, skip it."
+
+if [[ -z "${DISABLE_QC}" && "${MCRC}" = "0" && "${remainingargs}" == *"--include-local-qc"* ]] ; then
+  # do QC tasks
+  echo_info "Doing QC"
+  ${O2DPG_ROOT}/MC/bin/o2_dpg_workflow_runner.py -f workflow.json --target-labels QC --cpu-limit ${ALIEN_JDL_CPULIMIT:-8} -k
+  # NOTE that with the -k|--keep-going option, the runner will try to keep on executing even if some tasks fail.
+  # That means, even if there is a failing QC task, the return code will be 0
+  MCRC=$?
+fi
+
+#
+# full logs tar-ed for output, regardless the error code or validation - to catch also QC logs...
+#
+if [[ -n "$ALIEN_PROC_ID" ]]; then
+  find ./ \( -name "*.log*" -o -name "*mergerlog*" -o -name "*serverlog*" -o -name "*workerlog*" -o -name "pythia8.cfg" \) | tar -czvf debug_log_archive.tgz -T -
+  if [[ "$ALIEN_JDL_CREATE_TAR_IN_MC" == "1" ]]; then
+    find ./ \( -name "*.log*" -o -name "*mergerlog*" -o -name "*serverlog*" -o -name "*workerlog*" -o -name "*.root" \) | tar -czvf debug_full_archive.tgz -T -
+  fi
+fi
+
+unset FAIRMQ_IPC_PREFIX
+
+exit ${MCRC}
