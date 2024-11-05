@@ -251,6 +251,19 @@ ln -s -f $PWD/o2sim_geometry-aligned.root $ALICEO2_CCDB_LOCALCACHE/GLO/Config/Ge
 [[ -f $PWD/its_GeometryTGeo.root ]] && mkdir -p $ALICEO2_CCDB_LOCALCACHE/ITS/Config/Geometry && ln -s -f $PWD/its_GeometryTGeo.root $ALICEO2_CCDB_LOCALCACHE/ITS/Config/Geometry/snapshot.root
 [[ -f $PWD/mft_GeometryTGeo.root ]] && mkdir -p $ALICEO2_CCDB_LOCALCACHE/MFT/Config/Geometry && ln -s -f $PWD/mft_GeometryTGeo.root $ALICEO2_CCDB_LOCALCACHE/MFT/Config/Geometry/snapshot.root
 
+# custom ccdb objects for mid
+mkdir -p $ALICEO2_CCDB_LOCALCACHE/MID/Calib/ChamberEfficiency/
+
+declare -a CCDBOBJECTS=( "Users/l/lquaglia/MID/Calib/ChamberEfficiency/LHC22o_pass7_minBias_perRun" )
+for obj in "${CCDBOBJECTS[@]}"; do
+  ${O2_ROOT}/bin/o2-ccdb-downloadccdbfile --host http://alice-ccdb.cern.ch/ -p ${obj} -d .ccdb --timestamp ${TIMESTAMP}
+  if [ ! "$?" == "0" ]; then
+    echo "Problem during CCDB prefetching of ${CCDBOBJECTS}. Exiting."
+    exit 1
+  fi
+done
+cp $ALICEO2_CCDB_LOCALCACHE/Users/l/lquaglia/MID/Calib/ChamberEfficiency/LHC22o_pass7_minBias_perRun/* $ALICEO2_CCDB_LOCALCACHE/MID/Calib/ChamberEfficiency/
+
 # -- RUN THE MC WORKLOAD TO PRODUCE AOD --
 
 export FAIRMQ_IPC_PREFIX=./
