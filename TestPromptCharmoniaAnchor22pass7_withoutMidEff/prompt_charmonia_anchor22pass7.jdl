@@ -1,6 +1,9 @@
 Executable = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/prompt_charmonia_anchor22pass7.sh";
 Arguments = " --local  --ttl 82000 --label label --prodsplit 1  ";
-InputFile = "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/alien_jobscript.sh";
+InputFile = {
+    "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/alien_jobscript.sh",
+    "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/anchorMC.sh"
+};
 Split = "production:1-1";
 OutputDir = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/#alien_counter_03i#";
 Requirements = member(other.GridPartitions,"multicore_8");

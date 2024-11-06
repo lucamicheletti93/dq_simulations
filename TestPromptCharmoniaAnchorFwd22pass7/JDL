@@ -1,4 +1,4 @@
-Executable = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/prompt_charmonia_anchor22pass7.sh";
+Executable = "/alice/cern.ch/user/a/aliprod/LHC22l1/o2_o2dpg_sim_anchored_dev2.sh";
 
 JobTag = 
 {
@@ -17,9 +17,9 @@ InputFile = {
   "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/o2dpg_sim_workflow.py",
   "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/o2dpg_sim_workflow_anchored.py",
   "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/o2dpg_sim_config.py",
-  "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/o2dpg_qc_finalization_workflow.py",
-  "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/split_events.cpp",
-  "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/mch-qc.json",
+  "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/o2dpg_qc_finalization_workflow.py"#,
+  #"LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/split_events.cpp",
+  #"LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/mch-qc.json",
 };
 
 # $1              -- [prod_type]
@@ -32,11 +32,12 @@ InputFile = {
 #SplitArguments = "$1 $2 $3 $4 #alien_counter# $5 $6";
 
 SplitArguments = "./anchorMC.sh 1 MC MC 526641 #alien_counter# 0 0 --nevents 1000";
-OutputDir = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/#alien_counter_03i#";
+#SplitArguments = "./anchorMC.sh $4 $1 $1 $3 #alien_counter# 0 0 --nevents 1000";
+OutputDir = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/outputTest";
 
 Split = "production:1-1";
  
-ValidationCommand = "/alice/cern.ch/user/a/aliprod/LHC24g7/validation.sh";
+ValidationCommand = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/validation.sh";
 
 Output = 
 {
