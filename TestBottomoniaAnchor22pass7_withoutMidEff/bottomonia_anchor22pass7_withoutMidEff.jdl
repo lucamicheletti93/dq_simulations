@@ -1,0 +1,11 @@
+Executable = "/alice/cern.ch/user/l/lmichele/selfjobs/TestBottomoniaAnchor22pass7_withoutMidEff/bottomonia_anchor22pass7_withoutMidEff.sh";
+Arguments = " --local  --ttl 82000 --label label --prodsplit 1  ";
+InputFile = "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestBottomoniaAnchor22pass7_withoutMidEff/alien_jobscript.sh";
+Split = "production:1-1";
+OutputDir = "/alice/cern.ch/user/l/lmichele/selfjobs/TestBottomoniaAnchor22pass7_withoutMidEff/#alien_counter_03i#";
+Requirements = member(other.GridPartitions,"multicore_8");
+CPUCores = "8";
+MemorySize = "60GB";
+TTL=82000;
+Output = {"*.log@disk=1","*.root@disk=2","*.ini@disk=1"};
+Packages = {"VO_ALICE@O2sim::v20241111-1"};
