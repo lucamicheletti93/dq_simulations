@@ -29,7 +29,7 @@ MODIFIEDINI=GeneratorHF_bbbar_PsiAndJpsi_midy_triggerGap_fromCVMFS.ini # output 
 CFGTOREPLACE="\${O2DPG_MC_CONFIG_ROOT}/MC/config/common/pythia8/generator/pythia8_hf.cfg" # original config file name to be modified
 CFGFROMCVMFS="/cvmfs/alice.cern.ch/el9-x86_64/Packages/O2DPG/daily-20241202-0000/MC/config/common/pythia8/generator/pythia8_hf.cfg" # new config file name to use
 
-GENTOREPLACE="\${O2DPG_ROOT}/MC/config/PWGDQ/external/generator/generator_pythia8_NonPromptSignals_gaptriggered_dq.C" # original external generator file name to be modified
+GENTOREPLACE="\${O2DPG_MC_CONFIG_ROOT}/MC/config/PWGDQ/external/generator/generator_pythia8_NonPromptSignals_gaptriggered_dq.C" # original external generator file name to be modified
 GENFROMCVMFS="/cvmfs/alice.cern.ch/el9-x86_64/Packages/O2DPG/daily-20241202-0000/MC/config/PWGDQ/external/generator/generator_pythia8_NonPromptSignals_gaptriggered_dq.C" # new external generator file name to use
 
 if [ ! -f $MODIFIEDINI ]; then
