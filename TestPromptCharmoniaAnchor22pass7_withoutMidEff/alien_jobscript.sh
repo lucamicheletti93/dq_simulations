@@ -14,16 +14,12 @@ export ALIEN_JDL_LPMANCHORYEAR=${ALIEN_JDL_LPMANCHORYEAR:-"2022"}
 
 # added export
 export NTIMEFRAMES=8
-export NSIGEVENTS=100
+export NSIGEVENTS=1000
 export SPLITID=1
 export CYCLE=0
 export PRODSPLIT=8
 
 export ALIEN_JDL_ANCHOR_SIM_OPTIONS="-gen external -ini $O2DPG_ROOT/MC/config/PWGDQ/ini/Generator_InjectedPromptCharmoniaFwdy_TriggerGap.ini"
 
-#/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchorFwd22pass7/anchorMC.sh
-#${O2DPG_ROOT}/MC/run/ANCHOR/anchorMC.sh
-
-chmod +x ./anchorMC.sh
-./anchorMC.sh
+${O2DPG_ROOT}/MC/run/ANCHOR/anchorMC.sh
 

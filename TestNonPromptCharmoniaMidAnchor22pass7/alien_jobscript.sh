@@ -23,31 +23,34 @@ export PRODSPLIT=8
 
 
 # modify ini file, to have external generator and/or config from a specific tag different from the one used for anchoring
-ORIGINALINI=${O2DPG_ROOT}/MC/config/PWGDQ/ini/GeneratorHF_bbbar_PsiAndJpsi_midy_triggerGap.ini # original .ini file to be modified
-MODIFIEDINI=GeneratorHF_bbbar_PsiAndJpsi_midy_triggerGap_fromCVMFS.ini # output name for the modified .ini file
+#ORIGINALINI=${O2DPG_ROOT}/MC/config/PWGDQ/ini/GeneratorHF_bbbar_PsiAndJpsi_midy_triggerGap.ini # original .ini file to be modified
+#MODIFIEDINI=GeneratorHF_bbbar_PsiAndJpsi_midy_triggerGap_fromCVMFS.ini # output name for the modified .ini file
 
-CFGTOREPLACE="\${O2DPG_MC_CONFIG_ROOT}/MC/config/common/pythia8/generator/pythia8_hf.cfg" # original config file name to be modified
-CFGFROMCVMFS="/cvmfs/alice.cern.ch/el9-x86_64/Packages/O2DPG/daily-20241202-0000/MC/config/common/pythia8/generator/pythia8_hf.cfg" # new config file name to use
+#CFGTOREPLACE="\${O2DPG_MC_CONFIG_ROOT}/MC/config/common/pythia8/generator/pythia8_hf.cfg" # original config file name to be modified
+#CFGFROMCVMFS="/cvmfs/alice.cern.ch/el9-x86_64/Packages/O2DPG/daily-20241202-0000/MC/config/common/pythia8/generator/pythia8_hf.cfg" # new config file name to use
 
-GENTOREPLACE="\${O2DPG_MC_CONFIG_ROOT}/MC/config/PWGDQ/external/generator/generator_pythia8_NonPromptSignals_gaptriggered_dq.C" # original external generator file name to be modified
-GENFROMCVMFS="/cvmfs/alice.cern.ch/el9-x86_64/Packages/O2DPG/daily-20241202-0000/MC/config/PWGDQ/external/generator/generator_pythia8_NonPromptSignals_gaptriggered_dq.C" # new external generator file name to use
+#GENTOREPLACE="\${O2DPG_MC_CONFIG_ROOT}/MC/config/PWGDQ/external/generator/generator_pythia8_NonPromptSignals_gaptriggered_dq.C" # original external generator file name to be modified
+#GENFROMCVMFS="/cvmfs/alice.cern.ch/el9-x86_64/Packages/O2DPG/daily-20241202-0000/MC/config/PWGDQ/external/generator/generator_pythia8_NonPromptSignals_gaptriggered_dq.C" # new external generator file name to use
 
-if [ ! -f $MODIFIEDINI ]; then
-    sed -e "s|$CFGTOREPLACE|$CFGFROMCVMFS|g" -e "s|$GENTOREPLACE|$GENFROMCVMFS|g" $ORIGINALINI > $MODIFIEDINI
-fi
+#if [ ! -f $MODIFIEDINI ]; then
+    #sed -e "s|$CFGTOREPLACE|$CFGFROMCVMFS|g" -e "s|$GENTOREPLACE|$GENFROMCVMFS|g" $ORIGINALINI > $MODIFIEDINI
+#fi
 
-cat $MODIFIEDINI
+#cat $MODIFIEDINI
 
-MODIFIEDINI_PATH=$(readlink -f $MODIFIEDINI)
+#MODIFIEDINI_PATH=$(readlink -f $MODIFIEDINI)
 
-echo "Absolute path for MODIFIEDINI: $MODIFIEDINI_PATH"
+#echo "Absolute path for MODIFIEDINI: $MODIFIEDINI_PATH"
 
 #echo "Checking permissions for MODIFIEDINI:"
 #ls -l $MODIFIEDINI
 #chmod a+r $MODIFIEDINI
 #ls -l $MODIFIEDINI
 
-export ALIEN_JDL_ANCHOR_SIM_OPTIONS="-gen external -ini $MODIFIEDINI_PATH"
+#export ALIEN_JDL_ANCHOR_SIM_OPTIONS="-gen external -ini $MODIFIEDINI_PATH"
 
+export O2DPG_MC_CONFIG_ROOT=/cvmfs/alice.cern.ch/el9-x86_64/Packages/O2DPG/daily-20241114-0000-1  # version with the fix
+export ALIEN_JDL_O2DPG_MC_CONFIG_ROOT=/cvmfs/alice.cern.ch/el9-x86_64/Packages/O2DPG/daily-20241114-0000-1  # version with the fix
+export ALIEN_JDL_ANCHOR_SIM_OPTIONS="-gen external -ini $O2DPG_MC_CONFIG_ROOT/MC/config/PWGDQ/ini/GeneratorHF_bbbar_PsiAndJpsi_midy_triggerGap.ini"
 ${O2DPG_ROOT}/MC/run/ANCHOR/anchorMC.sh
 
