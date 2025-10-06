@@ -1,0 +1,22 @@
+Executable = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchor23PbPb/TestPromptCharmoniaAnchor23PbPb.sh";
+Arguments = " --local  --ttl 82000 --label label --prodsplit 1  ";
+InputFile = "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchor23PbPb/alien_jobscript.sh";
+Split = "production:1-5";
+OutputDir = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchor23PbPb/$1/#alien_counter_03i#";
+Requirements = member(other.GridPartitions,"multicore_8");
+CPUCores = "8";
+MemorySize = "60GB";
+TTL=82000;
+JobTag = "comment: PbPb@5.36TeV, 2023 pass4 - Run: $1";
+Output = {"*log*@disk=1","tf*/*log*@disk=1","AO2D.root@disk=2","tf*/AO2D.root@disk=2"};
+Packages = {"VO_ALICE@O2PDPSuite::daily-20250930-0000-1"};
+Requirements = {member(other.GridPartitions,multicore_8)};
+
+LPMRunNumber = "$1";
+LPMAnchorRun = "$1";
+
+JDLVariables = 
+{
+  "LPMRunNumber",
+  "LPMAnchorRun",
+};
