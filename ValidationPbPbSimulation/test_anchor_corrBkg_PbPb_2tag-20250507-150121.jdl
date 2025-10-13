@@ -1,0 +1,12 @@
+Executable = "/alice/cern.ch/user/l/lmichele/selfjobs/test_anchor_corrBkg_PbPb_2tag-20250507-150121/test_anchor_corrBkg_PbPb_2tag-20250507-150121.sh";
+Arguments = " --local  --ttl 82000 --label label --prodsplit 1  ";
+InputFile = "LF:/alice/cern.ch/user/l/lmichele/selfjobs/test_anchor_corrBkg_PbPb_2tag-20250507-150121/alien_jobscript.sh";
+Split = "production:1-1";
+OutputDir = "/alice/cern.ch/user/l/lmichele/selfjobs/test_anchor_corrBkg_PbPb_2tag-20250507-150121/#alien_counter_03i#";
+Requirements = member(other.GridPartitions,"multicore_8");
+CPUCores = "8";
+MemorySize = "60GB";
+TTL=82000;
+Output = {"*log*@disk=1","tf*/*log*@disk=1","AO2D.root@disk=2","tf*/AO2D.root@disk=2"};
+Packages = {"VO_ALICE@O2PDPSuite::async-async-v1-01-27-slc8-alidist-async-v1-01-05-1"};
+Requirements = {member(other.GridPartitions,multicore_8)};
