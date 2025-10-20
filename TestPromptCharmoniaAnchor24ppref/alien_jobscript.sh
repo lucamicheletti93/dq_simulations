@@ -22,7 +22,7 @@ export CYCLE=0
 #export ALIEN_JDL_O2DPG_ASYNC_RECO_TAG="VO_ALICE@O2PDPSuite::async-async-2024-ppRef-apass1-v2-slc9-alidist-async-2024-ppRef-apass1-v1-1"
 #export ALIEN_JDL_O2DPG_ASYNC_RECO_TAG="VO_ALICE@O2PDPSuite::async-async-v1-02-10-slc9-alidist-async-v1-02-01-1"
 export O2DPG_MC_CONFIG_ROOT="/cvmfs/alice.cern.ch/el9-x86_64/Packages/O2DPG/daily-20251008-0000-1"
-export INIPATH="${O2DPG_ROOT}/MC/config/PWGDQ/ini/Generator_InjectedPromptCharmoniaFwdy_TriggerGap.ini"
+export INIPATH="${O2DPG_ROOT}/MC/config/PWGDQ/ini/Generator_InjectedPromptCharmoniaFwdy_TriggerGap_pp5TeV.ini"
 export ALIEN_JDL_ANCHOR_SIM_OPTIONS="-gen external -ini $INIPATH"
 
 # disable QC
