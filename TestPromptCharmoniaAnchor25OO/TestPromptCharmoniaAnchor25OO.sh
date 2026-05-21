@@ -1,5 +1,3 @@
-
-
 #!/bin/bash
 
 # A helper script, making it easy to submit existing
@@ -596,6 +594,10 @@ if [ "${ONGRID}" = "1" ]; then
   fi
 fi
 
+# ----------- DOWNLOAD ADDITIONAL HELPERS ----------------------------
+# curl -o analyse_CPU.py https://raw.githubusercontent.com/sawenzel/AliceO2/swenzel/cpuana/Utilities/Tools/analyse_CPU.py &> /dev/null
+# chmod +x analyse_CPU.py
+export PATH=$PATH:$PWD
 # export JOBUTILS_MONITORCPU=ON
 # export JOBUTILS_WRAPPER_SLEEP=5
 # export JOBUTILS_JOB_KILLINACTIVE=180 # kill inactive jobs after 3 minutes --> will be the task of pipeline runner? (or make it optional)
@@ -616,4 +618,3 @@ echo "Job done ... exiting with ${RC}"
 
 # We need to exit for the ALIEN JOB HANDLER!
 exit ${RC}
-

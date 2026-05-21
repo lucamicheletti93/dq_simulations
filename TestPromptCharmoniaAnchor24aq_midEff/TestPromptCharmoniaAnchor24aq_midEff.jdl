@@ -15,7 +15,7 @@ Requirements = {member(other.GridPartitions,multicore_8)};
 LPMRunNumber = "$1";
 LPMAnchorRun = "$1";
 Splitting = "$2";
-REMAPPINGS="http://alice-ccdb.cern.ch/Users/l/lmichele/MID/Calib/ChamberEfficiency/TestLHC24aq";
+REMAPPINGS="http://alice-ccdb.cern.ch/Users/l/lmichele/testMID/=MID/Calib/ChamberEfficiency";
 
 JDLVariables = 
 {

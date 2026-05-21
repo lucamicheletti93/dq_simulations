@@ -1,22 +1,24 @@
-Executable = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchor25OO_new_tag/TestPromptCharmoniaAnchor25OO.sh";
+Executable = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchor25OO/TestPromptCharmoniaAnchor25OO.sh";
 Arguments = " --local  --ttl 82000 --label label --prodsplit 1  ";
-InputFile = "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchor25OO_new_tag/alien_jobscript.sh";
-Split = "production:1-1";
-OutputDir = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchor25OO_new_tag/$1/#alien_counter_03i#";
+InputFile = "LF:/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchor25OO/alien_jobscript.sh";
+Split = "production:1-$2";
+OutputDir = "/alice/cern.ch/user/l/lmichele/selfjobs/TestPromptCharmoniaAnchor25OO/$1/#alien_counter_03i#";
 Requirements = member(other.GridPartitions,"multicore_8");
 CPUCores = "8";
 MemorySize = "60GB";
 TTL=82000;
-JobTag = "comment: OO@5.36TeV, 2025 pass1 - Run: $1";
+JobTag = "comment: OO@5.36TeV, 2025 pass2 - Run: $1";
 Output = {"*log*@disk=1","tf*/*log*@disk=1","AO2D.root@disk=2","tf*/AO2D.root@disk=2"};
-Packages = {"VO_ALICE@O2PDPSuite::async-MC-prod-2025-v6-slc9-alidist-MC-prod-2025-v6-1 "};	
+Packages = {"VO_ALICE@O2PDPSuite::async-async-2025-OO-apass2-v1-slc9-alidist-async-2025-OO-apass2-v1-1"};	
 Requirements = {member(other.GridPartitions,multicore_8)};
 
 LPMRunNumber = "$1";
 LPMAnchorRun = "$1";
+Splitting = "$2";
 
 JDLVariables = 
 {
   "LPMRunNumber",
   "LPMAnchorRun",
+  "Splitting",
 };
