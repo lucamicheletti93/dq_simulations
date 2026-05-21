@@ -1,5 +1,6 @@
 # dq_simulations
 
+## Basic commands
 - Copy AO2Ds locally for checking:
   ```ruby
   alien.py cp -dst file:. <list of files>
@@ -13,13 +14,17 @@
   o2-analysis-dq-efficiency-with-assoc -b --configuration json://configuration.json | o2-analysis-mccollision-converter -b --configuration json://configuration.json |o2-analysis-tracks-extra-v002-converter -b --configuration json://configuration.json | o2-analysis-dq-table-maker-mc-with-assoc -b --configuration json://configuration.json | o2-analysis-fwdtrackextension -b --configuration json://configuration.json | o2-analysis-fwdtrack-to-collision-associator -b --configuration json://configuration.json | o2-analysis-multcenttable -b --configuration json://configuration.json | o2-analysis-event-selection-service -b --configuration json://configuration.json --aod-file @input_data.txt --aod-writer-json OutputDirector.json
   ```
 
-o2-analysis-dq-table-maker-mc-with-assoc -b --configuration json://configuration.json | o2-analysis-fwdtrackextension -b --configuration json://configuration.json | o2-analysis-mccollisionextra -b --configuration json://configuration.json | o2-analysis-tracks-extra-v002-converter -b --configuration json://configuration.json | o2-analysis-fwdtrack-to-collision-associator -b --configuration json://configuration.json | o2-analysis-multcenttable -b --configuration json://configuration.json | o2-analysis-event-selection-service -b --configuration json://configuration.json --aod-file @input_data.txt
+## Local simulations
+- Run a simulation to test new ini files:
+  ```ruby
+  o2-sim -j 4 -n 100 -g external -o sgn --configFile ${O2DPG_ROOT}/MC/config/PWGDQ/ini/Generator_InjectedPromptCharmoniaFwdy_TriggerGap_OO5TeV.ini
+  ```
 
-o2-analysis-dq-table-maker-mc-with-assoc -b --configuration json://configuration.json | o2-analysis-fwdtrackextension -b --configuration json://configuration.json | o2-analysis-mccollisionextra -b --configuration json://configuration.json | o2-analysis-tracks-extra-v002-converter -b --configuration json://configuration.json | o2-analysis-fwdtrack-to-collision-associator -b --configuration json://configuration.json | o2-analysis-multcenttable -b --configuration json://configuration.json | o2-analysis-event-selection-service -b --configuration json://configuration.json | o2-analysis-dq-efficiency-with-assoc -b --configuration json://configuration.json --aod-file @input_data.txt
-
-
-o2-analysis-dq-table-maker-mc-with-assoc -b --configuration json://configuration.json | o2-analysis-fwdtrackextension -b --configuration json://configuration.json | o2-analysis-mccollisionextra -b --configuration json://configuration.json | o2-analysis-fwdtrack-to-collision-associator -b --configuration json://configuration.json | o2-analysis-multcenttable -b --configuration json://configuration.json | o2-analysis-event-selection-service -b --configuration json://configuration.json --aod-file @input_data.txt
-
-o2-analysis-dq-table-maker-mc-with-assoc -b --configuration json://configuration.json | o2-analysis-fwdtrackextension -b --configuration json://configuration.json | o2-analysis-mccollisionextra -b --configuration json://configuration.json | o2-analysis-fwdtrack-to-collision-associator -b --configuration json://configuration.json | o2-analysis-multcenttable -b --configuration json://configuration.json | o2-analysis-event-selection-service -b --configuration json://configuration.json | o2-analysis-dq-efficiency-with-assoc -b --configuration json://configuration.json --aod-file @input_data.txt
-
-o2-analysis-dq-table-maker-mc-with-assoc -b --configuration json://configuration.json | o2-analysis-fwdtrackextension -b --configuration json://configuration.json | o2-analysis-fwdtrack-to-collision-associator -b --configuration json://configuration.json | o2-analysis-mccollisionextra -b --configuration json://configuration.json | o2-analysis-multcenttable -b --configuration json://configuration.json | o2-analysis-event-selection-service -b --configuration json://configuration.json --aod-file @input_data.txt
+- Run a single detector simulation:
+  ```ruby
+  o2-sim -g fwmugen -m MCH -n 10000
+  ```
+- Test new remap in the digitization (MID and MCH):
+  ```ruby
+  o2-sim-digitizer-workflow --condition-remap "http://alice-ccdb.cern.ch/Users/l/lmichele/testMCH/LHC25ae_pass2/=MCH/Calib/RejectList"
+  ```
