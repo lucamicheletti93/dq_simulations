@@ -28,3 +28,9 @@
   ```ruby
   o2-sim-digitizer-workflow --condition-remap "http://alice-ccdb.cern.ch/Users/l/lmichele/testMCH/LHC25ae_pass2/=MCH/Calib/RejectList"
   ```
+
+If you want to produce an AO2D.root you need to run a full simulation. You can copy the workflow from monalisa (e.g. /alice/sim/2025/LHC25i4/0/564356/001/workflow.json). You need to modify the path of the software release to run it. After having modified the workflow.json you can run the following command
+
+```ruby
+${O2DPG_ROOT}/MC/bin/o2dpg_workflow_runner.py -f workflow.json -tt aod
+```
