@@ -1,19 +1,24 @@
 #include <TFile.h>
 #include <TTree.h>
+#include <TH1.h>
+
+#include "SimulationDataFormat/MCTrack.h"
+
 #include <vector>
 #include <iostream>
 
-void readKine(const char* filename = "MCKine.root") {
+
+void readKine(const char* fInName = "MCKine.root") {
     TH1F *hPt = new TH1F("hPt", ";#it{p}_{T} (GeV/#it{c});Counts", 100, 0, 20);
     TH1F *hRap = new TH1F("hRap", ";#it{y};Counts", 100, -5, 5);
     TH1F *hMass = new TH1F("hMass", ";#it{m} (GeV^{2}/#it{c});Counts", 100, 0, 5);
-    TFile* file = TFile::Open(filename, "READ");
-    if (!file || file->IsZombie()) {
-        std::cerr << "Error opening file!" << std::endl;
+    TFile* fIn = TFile::Open(fInName, "READ");
+    if (!fIn || fIn->IsZombie()) {
+        std::cerr << "Error opening fIn!" << std::endl;
         return;
     }
 
-    TTree* tree = (TTree*)file->Get("o2sim");
+    TTree* tree = (TTree*)fIn->Get("o2sim");
     std::vector<o2::MCTrack>* tracks = nullptr;
     tree->SetBranchAddress("MCTrack", &tracks);
 
@@ -34,11 +39,11 @@ void readKine(const char* filename = "MCKine.root") {
         }
     }
 
-    TCanvas *canvas = new TCanvas("canvas", "", 1000, 1000);
-    canvas->Divide(2,2);
-    canvas->cd(1); hPt->Draw();
-    canvas->cd(2); hRap->Draw();
-    canvas->cd(3); hMass->Draw();
+    TFile *fOut = new TFile("sim_output.root", "RECREATE");
+    hPt->Write();
+    hRap->Write();
+    hMass->Write();
+    fOut->Close();
 
-    file->Close();
+    fIn->Close();
 }
