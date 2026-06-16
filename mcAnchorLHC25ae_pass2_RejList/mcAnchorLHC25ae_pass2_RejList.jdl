@@ -1,0 +1,25 @@
+Executable = "/alice/cern.ch/user/l/lmichele/selfjobs/mcAnchorLHC25ae_pass2_RejList/mcAnchorLHC25ae_pass2_RejList.sh";
+Arguments = " --local  --ttl 82000 --label label --prodsplit 1  ";
+InputFile = "LF:/alice/cern.ch/user/l/lmichele/selfjobs/mcAnchorLHC25ae_pass2_RejList/alien_jobscript.sh";
+Split = "production:1-$2";
+OutputDir = "/alice/cern.ch/user/l/lmichele/selfjobs/mcAnchorLHC25ae_pass2_RejList/$1/#alien_counter_03i#";
+Requirements = member(other.GridPartitions,"multicore_8");
+CPUCores = "8";
+MemorySize = "60GB";
+TTL=82000;
+JobTag = "comment: OO@5.36TeV, 2025ae pass2 - Run: $1";
+Output = {"AO2D.root@disk=1"};
+Packages = {"VO_ALICE@O2PDPSuite::daily-20260207-0000-1"};
+Requirements = {member(other.GridPartitions,multicore_8)};
+
+LPMRunNumber = "$1";
+LPMAnchorRun = "$1";
+Splitting = "$2";
+REMAPPINGS="http://alice-ccdb.cern.ch/Users/l/lmichele/testMCH/LHC25ae_pass2/=MCH/Calib/RejectList";
+
+JDLVariables = 
+{
+  "LPMRunNumber",
+  "LPMAnchorRun",
+  "Splitting",
+};
