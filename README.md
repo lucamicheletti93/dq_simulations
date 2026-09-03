@@ -32,6 +32,27 @@
   ```ruby
   o2-mch-mapping-svg-segmentation3 --hidepadchannels --hidepads --de 100 --prefix chamber1
   ```
+- Run filtering of DE with reject list:
+  ```ruby
+  o2-mch-digits-reader-workflow \
+  --mch-digit-infile mchdigits.root \
+  --disable-mc \
+  | o2-mch-statusmap-creator-workflow \
+      --configKeyValues 'MCHStatusMap.useBadChannels=false;MCHStatusMap.useRejectList=true;MCHStatusMap.useHV=false' \
+      --condition-backend http://alice-ccdb.cern.ch \
+      --condition-remap \
+      'http://alice-ccdb.cern.ch/Users/s/sgaretti/rejectList/dummy_noDE202_3rdVersion/=MCH/Calib/RejectList' \
+  | o2-mch-digits-filtering-workflow \
+      --disable-mc \
+      --configKeyValues 'MCHDigitFilter.statusMask=2' \
+  | o2-mch-digits-writer-workflow \
+      --input-digits-data-description F-DIGITS \
+      --input-digitrofs-data-description F-DIGITROFS \
+      --outfile mchdigits_filtered.root \
+      --nevents -1 \
+      --terminate workflow \
+      --run
+  ```
 
 If you want to produce an AO2D.root you need to run a full simulation. You can copy the workflow from monalisa (e.g. /alice/sim/2025/LHC25i4/0/564356/001/workflow.json). You need to modify the path of the software release to run it. After having modified the workflow.json you can run the following command
 
