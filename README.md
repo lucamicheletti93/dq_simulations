@@ -22,11 +22,11 @@
 
 - Run a single detector simulation:
   ```ruby
-  o2-sim -g fwmugen -m MCH -n 10000
+  o2-sim -g fwmugen -m MCH -n 100000 -j 20 --run 545210
   ```
 - Test new remap in the digitization (MID and MCH):
   ```ruby
-  o2-sim-digitizer-workflow --condition-remap "http://alice-ccdb.cern.ch/Users/l/lmichele/testMCH/LHC25ae_pass2/=MCH/Calib/RejectList"
+  o2-sim-digitizer-workflow
   ```
 - Plot the MCH segmentation:
   ```ruby
